@@ -36,12 +36,20 @@
 
         <div class="field" id="audioField" hidden>
           <label for="audioTarget">Audio files convert to</label>
-          <select id="audioTarget"></select>
+          <div class="custom-select" id="audioCustomSelect" tabindex="0">
+            <div class="select-selected" id="audioSelected"></div>
+            <div class="select-items select-hide" id="audioOptions"></div>
+          </div>
+          <input type="hidden" id="audioTarget" value="">
         </div>
 
         <div class="field" id="imageField" hidden>
           <label for="imageTarget">Image files convert to</label>
-          <select id="imageTarget"></select>
+          <div class="custom-select" id="imageCustomSelect" tabindex="0">
+            <div class="select-selected" id="imageSelected"></div>
+            <div class="select-items select-hide" id="imageOptions"></div>
+          </div>
+          <input type="hidden" id="imageTarget" value="">
         </div>
 
         <button class="btn-primary" id="convertBtn">Convert</button>

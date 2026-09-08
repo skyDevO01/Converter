@@ -244,9 +244,14 @@ body {
   color: var(--grey-1);
 }
 
-select {
-  appearance: none;
-  -webkit-appearance: none;
+/* ---------- custom select ---------- */
+
+.custom-select {
+  position: relative;
+  width: 100px;
+}
+
+.select-selected {
   background: var(--glass-fill-strong);
   border: 1px solid var(--glass-border);
   color: var(--white);
@@ -260,10 +265,67 @@ select {
   background-position: calc(100% - 18px) center, calc(100% - 13px) center;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
+  user-select: none;
+  transition: border-color 0.15s ease;
 }
 
-select:focus-visible {
+.custom-select:focus-visible {
+  outline: none;
+}
+
+.custom-select:focus-visible .select-selected {
   outline: 1px solid var(--white);
+}
+
+.custom-select.open .select-selected {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-color: var(--glass-border-strong);
+}
+
+.select-items {
+  position: absolute;
+  background-color: var(--bg-1);
+  border: 1px solid var(--glass-border);
+  border-top: none;
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.select-items::-webkit-scrollbar {
+  width: 6px;
+}
+.select-items::-webkit-scrollbar-thumb {
+  background: var(--grey-3);
+  border-radius: 3px;
+}
+
+.select-items div {
+  color: var(--white);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.select-items div:hover {
+  background-color: var(--glass-fill-strong);
+}
+
+.same-as-selected {
+  background-color: var(--glass-fill);
+}
+
+.select-hide {
+  display: none;
 }
 
 /* ---------- buttons ---------- */
@@ -353,5 +415,5 @@ select:focus-visible {
 @media (max-width: 480px) {
   .hero h1 { font-size: 1.7rem; }
   .field { flex-direction: column; align-items: flex-start; }
-  select { width: 100%; }
+  .custom-select { width: 100%; }
 }

@@ -6,6 +6,10 @@ const audioField = document.getElementById("audioField");
 const imageField = document.getElementById("imageField");
 const audioTarget = document.getElementById("audioTarget");
 const imageTarget = document.getElementById("imageTarget");
+const audioSelected = document.getElementById("audioSelected");
+const audioOptions = document.getElementById("audioOptions");
+const imageSelected = document.getElementById("imageSelected");
+const imageOptions = document.getElementById("imageOptions");
 const convertBtn = document.getElementById("convertBtn");
 const panel = document.getElementById("panel");
 const resultsEl = document.getElementById("results");
@@ -32,20 +36,57 @@ async function loadFormats() {
   const data = await res.json();
   AUDIO_EXTS = data.audio;
   IMAGE_EXTS = data.image;
-  fillSelect(audioTarget, AUDIO_EXTS, "mp3");
-  fillSelect(imageTarget, IMAGE_EXTS, "png");
+  fillSelectCustom(AUDIO_EXTS, "mp3", audioSelected, audioOptions, audioTarget);
+  fillSelectCustom(IMAGE_EXTS, "png", imageSelected, imageOptions, imageTarget);
 }
 
-function fillSelect(select, options, preferred) {
-  select.innerHTML = "";
+function fillSelectCustom(options, preferred, selectedEl, optionsEl, hiddenInput) {
+  optionsEl.innerHTML = "";
+  hiddenInput.value = preferred;
+  selectedEl.textContent = preferred;
+  
   options.forEach((ext) => {
-    const opt = document.createElement("option");
-    opt.value = ext;
-    opt.textContent = ext;
-    if (ext === preferred) opt.selected = true;
-    select.appendChild(opt);
+    const div = document.createElement("div");
+    div.textContent = ext;
+    if (ext === preferred) div.className = "same-as-selected";
+    
+    div.addEventListener("click", function(e) {
+      selectedEl.textContent = this.textContent;
+      hiddenInput.value = this.textContent;
+      const sameAs = optionsEl.querySelectorAll(".same-as-selected");
+      sameAs.forEach(el => el.classList.remove("same-as-selected"));
+      this.className = "same-as-selected";
+      optionsEl.classList.add("select-hide");
+      selectedEl.parentElement.classList.remove("open");
+      e.stopPropagation();
+    });
+    optionsEl.appendChild(div);
+  });
+  
+  selectedEl.addEventListener("click", function(e) {
+    e.stopPropagation();
+    closeAllSelect(this);
+    optionsEl.classList.toggle("select-hide");
+    selectedEl.parentElement.classList.toggle("open");
   });
 }
+
+function closeAllSelect(elmnt) {
+  const items = document.querySelectorAll(".select-items");
+  const selected = document.querySelectorAll(".select-selected");
+  for (let i = 0; i < selected.length; i++) {
+    if (elmnt !== selected[i]) {
+      selected[i].parentElement.classList.remove("open");
+    }
+  }
+  for (let i = 0; i < items.length; i++) {
+    if (elmnt !== selected[i]) {
+      items[i].classList.add("select-hide");
+    }
+  }
+}
+
+document.addEventListener("click", closeAllSelect);
 
 function addFiles(fileArray) {
   for (const f of fileArray) {
