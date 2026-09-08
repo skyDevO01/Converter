@@ -9,8 +9,7 @@ const imageTarget = document.getElementById("imageTarget");
 const convertBtn = document.getElementById("convertBtn");
 const panel = document.getElementById("panel");
 const resultsEl = document.getElementById("results");
-const resultListEl = document.getElementById("resultList");
-const zipLink = document.getElementById("zipLink");
+const resultMsg = document.getElementById("resultMsg");
 const resetBtn = document.getElementById("resetBtn");
 
 let selectedFiles = [];
@@ -148,8 +147,41 @@ convertBtn.addEventListener("click", async () => {
 
   try {
     const res = await fetch("/convert", { method: "POST", body: formData });
-    const data = await res.json();
-    showResults(data);
+
+    if (!res.ok) {
+      let msg = "Conversion failed";
+      try {
+        const data = await res.json();
+        msg = data.error || msg;
+        if (data.details) msg += ": " + data.details.join(", ");
+      } catch {}
+      alert(msg);
+      return;
+    }
+
+    // Get filename from Content-Disposition header
+    const disposition = res.headers.get("Content-Disposition") || "";
+    let filename = "converted_file";
+    const match = disposition.match(/filename\*?=(?:UTF-8''|"?)([^";]+)/i);
+    if (match) filename = decodeURIComponent(match[1].replace(/"/g, ""));
+
+    // Download the file
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+    // Show done
+    const count = selectedFiles.length;
+    resultMsg.textContent = count === 1
+      ? `Your file has been converted and downloaded.`
+      : `${count} files converted and downloaded as a zip.`;
+    showDone();
   } catch (err) {
     alert("Conversion failed: " + err.message);
   } finally {
@@ -158,49 +190,7 @@ convertBtn.addEventListener("click", async () => {
   }
 });
 
-function showResults(data) {
-  resultListEl.innerHTML = "";
-
-  data.results.forEach((r) => {
-    const li = document.createElement("li");
-    li.className = "result-row" + (r.ok ? "" : " error");
-
-    const names = document.createElement("span");
-    names.className = "names";
-    if (r.ok) {
-      names.innerHTML = `${r.original}<span class="arrow">\u2192</span>${r.converted}`;
-    } else {
-      names.textContent = r.original;
-    }
-    li.appendChild(names);
-
-    if (r.ok) {
-      const link = document.createElement("a");
-      link.className = "download";
-      link.href = r.download_url;
-      link.textContent = "Download";
-      link.setAttribute("download", "");
-      li.appendChild(link);
-    } else {
-      const err = document.createElement("span");
-      err.className = "error-text";
-      err.textContent = r.error;
-      li.appendChild(err);
-    }
-
-    resultListEl.appendChild(li);
-  });
-
-  if (data.zip_url) {
-    zipLink.href = data.zip_url;
-    zipLink.hidden = false;
-  } else {
-    zipLink.hidden = true;
-  }
-
-  dropzone.parentElement.querySelectorAll(".dropzone, .file-list, .controls").forEach((el) => {
-    // keep dropzone/list/controls but tuck them away visually by hiding this round's inputs
-  });
+function showDone() {
   document.getElementById("dropzone").hidden = true;
   fileListEl.hidden = true;
   controls.hidden = true;

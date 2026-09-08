@@ -334,51 +334,11 @@ select:focus-visible {
   margin: 0;
 }
 
-.result-list {
-  list-style: none;
+.result-msg {
+  color: var(--grey-1);
+  font-size: 0.9rem;
   margin: 0 0 16px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.result-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  background: var(--glass-fill);
-  border: 1px solid var(--glass-border);
-}
-
-.result-row.error {
-  border-color: rgba(255,255,255,0.22);
-}
-
-.result-row .names {
-  font-size: 0.88rem;
-  overflow: hidden;
-}
-
-.result-row .names .arrow {
-  color: var(--grey-2);
-  margin: 0 6px;
-}
-
-.result-row .error-text {
-  color: var(--grey-2);
-  font-size: 0.82rem;
-}
-
-.result-row a.download {
-  color: var(--white);
-  font-size: 0.82rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  flex-shrink: 0;
+  line-height: 1.6;
 }
 
 /* ---------- footer ---------- */

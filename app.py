@@ -12,30 +12,16 @@ Production (Vercel):
 """
 
 import shutil
-import time
-import uuid
+import tempfile
 import zipfile
+from io import BytesIO
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory, abort
+from flask import Flask, jsonify, render_template, request, send_file
 
 from converter_core import AUDIO_EXTS, IMAGE_EXTS, convert_one, detect_kind
 
 app = Flask(__name__)
-
-# Use /tmp for Vercel container compatibility; falls back to local sessions/ for dev
-import os
-_tmp = os.environ.get("TMPDIR", "/tmp") if os.name != "nt" else Path(__file__).parent / "sessions"
-SESSIONS_DIR = Path(_tmp) / "sessions"
-SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-SESSION_MAX_AGE = 3600  # seconds — old session folders get swept on each request
-
-
-def cleanup_old_sessions():
-    now = time.time()
-    for d in SESSIONS_DIR.iterdir():
-        if d.is_dir() and now - d.stat().st_mtime > SESSION_MAX_AGE:
-            shutil.rmtree(d, ignore_errors=True)
 
 
 @app.route("/")
@@ -53,8 +39,6 @@ def formats():
 
 @app.route("/convert", methods=["POST"])
 def convert():
-    cleanup_old_sessions()
-
     files = request.files.getlist("files")
     audio_target = request.form.get("audio_target", "").lower().lstrip(".")
     image_target = request.form.get("image_target", "").lower().lstrip(".")
@@ -62,53 +46,55 @@ def convert():
     if not files:
         return jsonify({"error": "No files received"}), 400
 
-    session_id = uuid.uuid4().hex
-    session_dir = SESSIONS_DIR / session_id
-    upload_dir = session_dir / "in"
-    output_dir = session_dir / "out"
-    upload_dir.mkdir(parents=True)
-    output_dir.mkdir(parents=True)
+    tmpdir = tempfile.mkdtemp()
+    try:
+        upload_dir = Path(tmpdir) / "in"
+        output_dir = Path(tmpdir) / "out"
+        upload_dir.mkdir()
+        output_dir.mkdir()
 
-    results = []
-    for f in files:
-        if not f.filename:
-            continue
-        saved_path = upload_dir / f.filename
-        f.save(saved_path)
+        results = []
+        for f in files:
+            if not f.filename:
+                continue
+            saved_path = upload_dir / f.filename
+            f.save(saved_path)
 
-        kind = detect_kind(f.filename)
-        target = audio_target if kind == "audio" else image_target if kind == "image" else None
+            kind = detect_kind(f.filename)
+            target = audio_target if kind == "audio" else image_target if kind == "image" else None
 
-        if not target:
-            results.append({"original": f.filename, "ok": False,
-                             "error": "No target format chosen for this file type"})
-            continue
+            if not target:
+                results.append({"original": f.filename, "ok": False,
+                                 "error": "No target format chosen for this file type"})
+                continue
 
-        result = convert_one(saved_path, target, output_dir)
-        results.append(result)
+            result = convert_one(saved_path, target, output_dir)
+            results.append(result)
 
-    ok_results = [r for r in results if r["ok"]]
+        ok_results = [r for r in results if r["ok"]]
 
-    zip_url = None
-    if len(ok_results) > 1:
-        zip_path = output_dir / "converted_files.zip"
-        with zipfile.ZipFile(zip_path, "w") as zf:
-            for r in ok_results:
-                zf.write(output_dir / r["converted"], arcname=r["converted"])
-        zip_url = f"/download/{session_id}/converted_files.zip"
+        if not ok_results:
+            errors = [r.get("error", "Unknown error") for r in results if not r["ok"]]
+            return jsonify({"error": "Conversion failed", "details": errors}), 400
 
-    for r in ok_results:
-        r["download_url"] = f"/download/{session_id}/{r['converted']}"
-
-    return jsonify({"session": session_id, "results": results, "zip_url": zip_url})
-
-
-@app.route("/download/<session_id>/<path:filename>")
-def download(session_id, filename):
-    directory = SESSIONS_DIR / session_id / "out"
-    if not directory.exists():
-        abort(404)
-    return send_from_directory(directory, filename, as_attachment=True)
+        if len(ok_results) == 1:
+            # Single file — return it directly
+            file_path = output_dir / ok_results[0]["converted"]
+            data = BytesIO(file_path.read_bytes())
+            return send_file(data, as_attachment=True,
+                             download_name=ok_results[0]["converted"])
+        else:
+            # Multiple files — zip and return
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+                for r in ok_results:
+                    zf.write(output_dir / r["converted"], arcname=r["converted"])
+            zip_buffer.seek(0)
+            return send_file(zip_buffer, as_attachment=True,
+                             download_name="converted_files.zip",
+                             mimetype="application/zip")
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 if __name__ == "__main__":
