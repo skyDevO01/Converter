@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convertify — Audio & Image Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <div class="backdrop" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+  </div>
+
+  <main class="page">
+    <header class="hero">
+      <h1>Convert audio and images,<br>instantly in your browser</h1>
+      <p class="subtitle">Drop your files below and pick a target format. Fast, simple, and free.</p>
+    </header>
+
+    <section class="panel" id="panel">
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose files to convert">
+        <p class="dropzone-title">Drag files here, or click to choose</p>
+        <p class="dropzone-hint">mp3, wav, flac, ogg, m4a, aac, wma, aiff &nbsp;&middot;&nbsp; png, jpg, webp, gif, bmp, tiff, ico</p>
+        <input type="file" id="fileInput" multiple hidden>
+      </div>
+
+      <ul class="file-list" id="fileList" hidden></ul>
+
+      <div class="controls" id="controls" hidden>
+
+        <div class="field" id="audioField" hidden>
+          <label for="audioTarget">Audio files convert to</label>
+          <select id="audioTarget"></select>
+        </div>
+
+        <div class="field" id="imageField" hidden>
+          <label for="imageTarget">Image files convert to</label>
+          <select id="imageTarget"></select>
+        </div>
+
+        <button class="btn-primary" id="convertBtn">Convert</button>
+      </div>
+
+      <div class="results" id="results" hidden>
+        <div class="results-head">
+          <h2>Done</h2>
+          <a class="btn-ghost" id="zipLink" hidden download>Download all (.zip)</a>
+        </div>
+        <ul class="result-list" id="resultList"></ul>
+        <button class="btn-ghost" id="resetBtn">Convert more files</button>
+      </div>
+
+    </section>
+
+    <footer class="footnote">
+      Powered by Convertify &mdash; fast audio & image conversion.
+    </footer>
+  </main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
